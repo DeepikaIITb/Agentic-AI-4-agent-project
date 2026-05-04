@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agentic Curriculum System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0f14;
+  --bg2: #13161e;
+  --bg3: #1a1e28;
+  --border: #252836;
+  --border2: #2e3346;
+  --text: #e8eaf0;
+  --text2: #9196a8;
+  --text3: #5a5f72;
+  --accent: #4f7cff;
+  --accent2: #7c5cff;
+  --green: #3ecf8e;
+  --amber: #f5a623;
+  --red: #ff5c6a;
+  --teal: #26c6da;
+  --purple: #ab7cff;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-display: 'Instrument Serif', serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Background grid ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; }
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.logo-text h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.logo-text p {
+  font-size: 12px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+.header-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pill {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot-blue  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+/* ── Selector bar ── */
+.selector-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+select {
+  flex: 1;
+  max-width: 280px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5f72' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  transition: border-color .2s;
+}
+select:focus { border-color: var(--accent); }
+select option { background: var(--bg2); }
+
+.run-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity .2s, transform .1s;
+  white-space: nowrap;
+}
+.run-btn:hover { opacity: .88; }
+.run-btn:active { transform: scale(.97); }
+.run-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Section label ── */
+.section-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+/* ── Metric grid ── */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.metric {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  transition: border-color .2s;
+}
+.metric:hover { border-color: var(--border2); }
+.metric-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+.metric-value {
+  font-size: 26px;
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.metric-sub { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+
+/* ── Agent grid ── */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.agent-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  transition: border-color .2s;
+}
+.agent-card:hover { border-color: var(--border2); }
+.agent-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.agent-icon {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.icon-blue   { background: rgba(79,124,255,.15); color: var(--accent); border: 1px solid rgba(79,124,255,.25); }
+.icon-green  { background: rgba(62,207,142,.15); color: var(--green);  border: 1px solid rgba(62,207,142,.25); }
+.icon-amber  { background: rgba(245,166,35,.15);  color: var(--amber);  border: 1px solid rgba(245,166,35,.25); }
+.icon-purple { background: rgba(171,124,255,.15); color: var(--purple); border: 1px solid rgba(171,124,255,.25); }
+
+.agent-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.agent-sub   { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+
+.agent-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.agent-row:last-child { border-bottom: none; }
+.row-label { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+.row-value { font-size: 12px; font-weight: 500; color: var(--text); text-align: right; }
+.row-value.small { font-size: 11px; max-width: 160px; }
+
+/* ── Badges ── */
+.badge {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-green  { background: rgba(62,207,142,.12);  color: var(--green);  border: 1px solid rgba(62,207,142,.2); }
+.badge-blue   { background: rgba(79,124,255,.12);  color: var(--accent); border: 1px solid rgba(79,124,255,.2); }
+.badge-amber  { background: rgba(245,166,35,.12);  color: var(--amber);  border: 1px solid rgba(245,166,35,.2); }
+.badge-red    { background: rgba(255,92,106,.12);  color: var(--red);    border: 1px solid rgba(255,92,106,.2); }
+.badge-purple { background: rgba(171,124,255,.12); color: var(--purple); border: 1px solid rgba(171,124,255,.2); }
+.badge-teal   { background: rgba(38,198,218,.12);  color: var(--teal);   border: 1px solid rgba(38,198,218,.2); }
+
+/* ── Progress bar ── */
+.progress-wrap { margin-top: 6px; }
+.progress-bg   { height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+/* ── Chart card ── */
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 28px;
+}
+.chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-card-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.chart-card-sub   { font-size: 11px; color: var(--text3); font-family: var(--font-mono); margin-top: 2px; }
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+canvas { display: block; }
+
+/* ── Pipeline flow ── */
+.pipeline-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.pipeline-node {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+}
+.pipeline-arrow { color: var(--text3); font-size: 14px; flex-shrink: 0; }
+.pipeline-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  line-height: 1.6;
+}
+
+/* ── Learning path table ── */
+.path-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.path-table th {
+  text-align: left;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: .06em;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.path-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  vertical-align: middle;
+}
+.path-table tr:last-child td { border-bottom: none; }
+.path-table tr:hover td { background: var(--bg3); }
+.step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+}
+.reason-text { font-size: 11px; color: var(--text3); font-family: var(--font-mono); margin-top: 2px; }
+
+/* ── Empty / loading states ── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text3);
+}
+.empty-state .big-icon { font-size: 36px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+.empty-state small { font-size: 12px; font-family: var(--font-mono); }
+
+.error-bar {
+  background: rgba(255,92,106,.1);
+  border: 1px solid rgba(255,92,106,.25);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 20px;
+  display: none;
+}
+
+/* ── Milestones ── */
+.milestone-list { list-style: none; }
+.milestone-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text2);
+}
+.milestone-list li:last-child { border-bottom: none; }
+.ms-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: #fff;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Tags ── */
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+
+/* ── Fade in ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeUp .4s ease forwards; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .metric-value { font-size: 20px; }
+  .path-table th:nth-child(4),
+  .path-table td:nth-child(4) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎓</div>
+      <div class="logo-text">
+        <h1>Agentic Curriculum System</h1>
+        <p>4-agent · llama-3.3-70b · SQLite · 30 learners</p>
+      </div>
+    </div>
+    <div class="header-pills">
+      <div class="pill"><span class="dot dot-green"></span>Learner agent</div>
+      <div class="pill"><span class="dot dot-green"></span>Assessment agent</div>
+      <div class="pill"><span class="dot dot-green"></span>Population agent</div>
+      <div class="pill"><span class="dot dot-green"></span>Curriculum agent</div>
+      <div class="pill"><span class="dot dot-blue"></span>30-learner cohort</div>
+    </div>
+  </header>
+
+  <!-- Selector -->
+  <div class="selector-bar">
+    <select id="learnerSelect"><option value="">Loading learners…</option></select>
+    <button class="run-btn" id="runBtn" onclick="runAgents()" disabled>
+      <span class="spinner" id="spinner"></span>
+      <span id="btnText">Run agents ↗</span>
+    </button>
+  </div>
+
+  <div class="error-bar" id="errorBar"></div>
+
+  <!-- Results (hidden until run) -->
+  <div id="results" style="display:none;">
+
+    <!-- Summary metrics -->
+    <p class="section-label">Summary metrics</p>
+    <div class="metric-grid" id="metricGrid">
+      <div class="metric"><p class="metric-label">Overall score</p><p class="metric-value" id="m-score">—</p><p class="metric-sub" id="m-score-sub">vs cohort</p></div>
+      <div class="metric"><p class="metric-label">Cohort percentile</p><p class="metric-value" id="m-pct">—</p><p class="metric-sub" id="m-pct-sub">rank</p></div>
+      <div class="metric"><p class="metric-label">Learning pace</p><p class="metric-value" id="m-pace">—</p><p class="metric-sub">recommended</p></div>
+      <div class="metric"><p class="metric-label">Performance tier</p><p class="metric-value" id="m-tier">—</p><p class="metric-sub" id="m-tier-sub">in cohort</p></div>
+      <div class="metric"><p class="metric-label">Path duration</p><p class="metric-value" id="m-dur">—</p><p class="metric-sub" id="m-dur-sub">estimated weeks</p></div>
+    </div>
+
+    <!-- Agent cards -->
+    <p class="section-label">Agent outputs</p>
+    <div class="agent-grid">
+
+      <!-- Learner agent -->
+      <div class="agent-card">
+        <div class="agent-header">
+          <div class="agent-icon icon-blue">L</div>
+          <div><p class="agent-title">Learner agent</p><p class="agent-sub">individual behaviour</p></div>
+        </div>
+        <div class="agent-row"><span class="row-label">Name</span><span class="row-value" id="a-name">—</span></div>
+        <div class="agent-row"><span class="row-label">Prior knowledge</span><span class="badge" id="a-level">—</span></div>
+        <div class="agent-row"><span class="row-label">Learning style</span><span class="badge badge-blue" id="a-style">—</span></div>
+        <div class="agent-row"><span class="row-label">Recommended pace</span><span class="badge" id="a-pace">—</span></div>
+        <div class="agent-row"><span class="row-label">Engagement score</span><span class="row-value" id="a-eng">—</span></div>
+        <div class="agent-row"><span class="row-label">Strengths</span><span class="row-value small" id="a-strengths">—</span></div>
+        <div class="agent-row"><span class="row-label">Summary</span></div>
+        <p style="font-size:11px;color:var(--text3);font-family:var(--font-mono);line-height:1.6;padding-top:8px;" id="a-summary">—</p>
+      </div>
+
+      <!-- Assessment agent -->
+      <div class="agent-card">
+        <div class="agent-header">
+          <div class="agent-icon icon-green">A</div>
+          <div><p class="agent-title">Assessment agent</p><p class="agent-sub">mastery map & gaps</p></div>
+        </div>
+        <div class="agent-row"><span class="row-label">Mastered topics</span><span class="badge badge-green" id="b-mastered-count">—</span></div>
+        <div class="agent-row"><span class="row-label">Struggling topics</span><span class="badge badge-red" id="b-struggling-count">—</span></div>
+        <div class="agent-row"><span class="row-label">Ready for advanced</span><span class="badge" id="b-advanced">—</span></div>
+        <div class="agent-row"><span class="row-label">Knowledge gaps</span></div>
+        <div style="padding-top:8px;" id="b-gaps-list"></div>
+      </div>
+
+      <!-- Population agent -->
+      <div class="agent-card">
+        <div class="agent-header">
+          <div class="agent-icon icon-amber">P</div>
+          <div><p class="agent-title">Population agent</p><p class="agent-sub">cohort benchmarking</p></div>
+        </div>
+        <div class="agent-row"><span class="row-label">Percentile rank</span><span class="row-value" id="c-pct">—</span></div>
+        <div class="agent-row"><span class="row-label">Learner avg score</span><span class="row-value" id="c-lscore">—</span></div>
+        <div class="agent-row"><span class="row-label">Cohort avg score</span><span class="row-value" id="c-cscore">—</span></div>
+        <div class="agent-row"><span class="row-label">Challenge level</span><span class="badge" id="c-challenge">—</span></div>
+        <div class="agent-row"><span class="row-label">Peer summary</span></div>
+        <p style="font-size:11px;color:var(--text3);font-family:var(--font-mono);line-height:1.6;padding-top:8px;" id="c-peer">—</p>
+      </div>
+
+      <!-- Curriculum agent -->
+      <div class="agent-card">
+        <div class="agent-header">
+          <div class="agent-icon icon-purple">C</div>
+          <div><p class="agent-title">Curriculum agent</p><p class="agent-sub">personalised path</p></div>
+        </div>
+        <div class="agent-row"><span class="row-label">Path steps</span><span class="row-value" id="d-steps">—</span></div>
+        <div class="agent-row"><span class="row-label">Total duration</span><span class="row-value" id="d-dur">—</span></div>
+        <div class="agent-row"><span class="row-label">Estimated weeks</span><span class="row-value" id="d-weeks">—</span></div>
+        <div class="agent-row"><span class="row-label">Focus areas</span></div>
+        <div style="padding-top:8px;" id="d-focus-list"></div>
+      </div>
+
+    </div>
+
+    <!-- Mastery chart -->
+    <p class="section-label">Topic mastery breakdown</p>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <p class="chart-card-title">Learner score vs cohort average</p>
+          <p class="chart-card-sub">per topic · out of 100</p>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Learner</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>Cohort avg</div>
+        </div>
+      </div>
+      <div style="position:relative;height:240px;">
+        <canvas id="masteryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Learning path -->
+    <p class="section-label">Recommended learning path</p>
+    <div class="chart-card" style="padding:0;overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+        <p class="chart-card-title">Personalised sequence</p>
+        <p class="chart-card-sub" id="path-rationale" style="margin-top:6px;line-height:1.6;max-width:700px;">—</p>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="path-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Title</th>
+              <th>Topic</th>
+              <th>Difficulty</th>
+              <th>Type</th>
+              <th>Mins</th>
+            </tr>
+          </thead>
+          <tbody id="pathTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Milestones -->
+    <p class="section-label" style="margin-top:28px;">Milestones</p>
+    <div class="chart-card">
+      <ul class="milestone-list" id="milestoneList"></ul>
+    </div>
+
+    <!-- Pipeline diagram -->
+    <p class="section-label" style="margin-top:28px;">Agent communication flow</p>
+    <div class="chart-card">
+      <div class="pipeline-flow">
+        <div class="pipeline-node" style="background:rgba(79,124,255,.1);border-color:rgba(79,124,255,.25);color:var(--accent);">Curriculum agent<br><small style="font-family:var(--font-mono);font-size:10px;opacity:.7">scans content</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-node" style="background:rgba(62,207,142,.1);border-color:rgba(62,207,142,.25);color:var(--green);">Learner agent<br><small style="font-family:var(--font-mono);font-size:10px;opacity:.7">analyses student</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-node" style="background:rgba(62,207,142,.1);border-color:rgba(62,207,142,.25);color:var(--green);">Assessment agent<br><small style="font-family:var(--font-mono);font-size:10px;opacity:.7">maps mastery</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-node" style="background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25);color:var(--amber);">Population agent<br><small style="font-family:var(--font-mono);font-size:10px;opacity:.7">benchmarks cohort</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-node" style="background:rgba(171,124,255,.1);border-color:rgba(171,124,255,.25);color:var(--purple);">Curriculum agent<br><small style="font-family:var(--font-mono);font-size:10px;opacity:.7">generates path</small></div>
+      </div>
+      <div class="pipeline-note">
+        Each agent writes its output to a shared MemoryStore. The next agent reads from it before calling the LLM. This chain runs in ~10–20s and produces a fully personalised learning path.
+      </div>
+    </div>
+
+  </div><!-- /results -->
+
+  <!-- Empty state -->
+  <div id="emptyState" class="empty-state">
+    <div class="big-icon">🤖</div>
+    <p>Select a learner and click <strong>Run agents</strong></p>
+    <small>The 4 agents will analyse, benchmark, and generate a personalised path</small>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const API = '';  // same origin — FastAPI serves this file
+
+let masteryChart = null;
+
+// ── Load learner dropdown ─────────────────────────────────────────────────
+async function loadLearners() {
+  try {
+    const res = await fetch(API + '/api/learners');
+    const learners = await res.json();
+    const sel = document.getElementById('learnerSelect');
+    sel.innerHTML = '<option value="">— select a learner —</option>' +
+      learners.map(l =>
+        `<option value="${l.id}">Learner ${l.id} — ${l.name} (${l.prior_knowledge})</option>`
+      ).join('');
+    sel.disabled = false;
+    document.getElementById('runBtn').disabled = false;
+  } catch (e) {
+    document.getElementById('learnerSelect').innerHTML =
+      '<option>Could not reach API — is the server running?</option>';
+  }
+}
+
+// ── Run pipeline ──────────────────────────────────────────────────────────
+async function runAgents() {
+  const id = document.getElementById('learnerSelect').value;
+  if (!id) return;
+
+  setLoading(true);
+  hideError();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+
+  try {
+    const res = await fetch(API + `/api/run/${id}`);
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Pipeline failed');
+    }
+    const data = await res.json();
+    renderResults(data);
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').classList.add('fade-in');
+  } catch (e) {
+    showError(e.message);
+    document.getElementById('emptyState').style.display = 'block';
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Render all sections ───────────────────────────────────────────────────
+function renderResults(d) {
+  const { learner, assessment, population, path } = d;
+
+  // Metrics
+  const scoreDiff = (learner.avg_score - population.cohort_avg_score).toFixed(1);
+  set('m-score', learner.avg_score.toFixed(1) + '%');
+  set('m-score-sub', (scoreDiff >= 0 ? '+' : '') + scoreDiff + ' vs cohort');
+  set('m-pct', ordinal(Math.round(population.percentile_rank)));
+  set('m-pct-sub', population.performance_tier.replace('_', ' '));
+  set('m-pace', cap(learner.recommended_pace));
+  set('m-tier', cap(population.performance_tier.replace('_', ' ')));
+  set('m-dur', path.total_duration_mins + ' mins');
+  set('m-dur-sub', path.estimated_weeks + ' est. weeks');
+
+  // Learner card
+  set('a-name', learner.name);
+  setBadge('a-level', cap(learner.prior_knowledge), levelColor(learner.prior_knowledge));
+  setBadge('a-style', cap(learner.learning_style), 'badge-blue');
+  setBadge('a-pace', cap(learner.recommended_pace), paceColor(learner.recommended_pace));
+  set('a-eng', (learner.avg_engagement * 100).toFixed(0) + '%');
+  set('a-strengths', learner.strengths.slice(0,3).join(', ') || '—');
+  set('a-summary', learner.summary || '—');
+
+  // Assessment card
+  set('b-mastered-count', learner.strengths.length + ' topics', false);
+  document.getElementById('b-mastered-count').className = 'badge badge-green';
+  set('b-struggling-count', assessment.struggling_topics.length + ' topics', false);
+  document.getElementById('b-struggling-count').className = 'badge badge-red';
+  const adv = assessment.readiness_for_advanced;
+  document.getElementById('b-advanced').textContent = adv ? 'Yes' : 'Not yet';
+  document.getElementById('b-advanced').className = 'badge ' + (adv ? 'badge-green' : 'badge-amber');
+  const gapsList = document.getElementById('b-gaps-list');
+  gapsList.innerHTML = '<div class="tag-list">' +
+    (assessment.knowledge_gaps.slice(0,4).map(g => `<span class="tag">${g}</span>`).join('') || '<span class="tag">none identified</span>') +
+    '</div>';
+
+  // Population card
+  set('c-pct', ordinal(Math.round(population.percentile_rank)));
+  set('c-lscore', population.learner_avg_score.toFixed(1) + '%');
+  set('c-cscore', population.cohort_avg_score.toFixed(1) + '%');
+  setBadge('c-challenge', cap(population.recommended_challenge_level), challengeColor(population.recommended_challenge_level));
+  set('c-peer', population.peer_comparison_summary || '—');
+
+  // Curriculum card
+  set('d-steps', path.learning_path.length + ' items');
+  set('d-dur', path.total_duration_mins + ' mins');
+  set('d-weeks', path.estimated_weeks + ' weeks');
+  document.getElementById('d-focus-list').innerHTML = '<div class="tag-list">' +
+    (path.focus_areas.map(f => `<span class="tag">${f}</span>`).join('') || '<span class="tag">—</span>') +
+    '</div>';
+
+  // Chart
+  renderChart(assessment.raw_mastery, population.cohort_avg_score);
+
+  // Path table
+  set('path-rationale', path.path_rationale || '');
+  const tbody = document.getElementById('pathTableBody');
+  tbody.innerHTML = path.learning_path.slice(0,12).map((item, i) => `
+    <tr>
+      <td><span class="step-num">${i+1}</span></td>
+      <td>
+        <div style="color:var(--text);font-weight:500;">${esc(item.title || '')}</div>
+        <div class="reason-text">${esc((item.reason || '').slice(0,80))}</div>
+      </td>
+      <td><span class="badge badge-teal">${esc(item.topic || '')}</span></td>
+      <td><span class="badge ${diffColor(item.difficulty)}">${cap(item.difficulty || '')}</span></td>
+      <td><span class="badge badge-purple">${esc(item.content_type || '')}</span></td>
+      <td style="color:var(--text3);font-family:var(--font-mono);font-size:12px;">${item.duration_mins || '—'}</td>
+    </tr>
+  `).join('');
+
+  // Milestones
+  const ml = document.getElementById('milestoneList');
+  ml.innerHTML = (path.milestones.length ? path.milestones : ['Complete the learning path']).map((m, i) => `
+    <li><span class="ms-num">${i+1}</span>${esc(m)}</li>
+  `).join('');
+}
+
+function renderChart(rawMastery, cohortAvg) {
+  const topics = Object.keys(rawMastery);
+  const scores = topics.map(t => rawMastery[t]);
+  const cohort  = topics.map(() => cohortAvg);
+
+  if (masteryChart) masteryChart.destroy();
+  masteryChart = new Chart(document.getElementById('masteryChart'), {
+    type: 'bar',
+    data: {
+      labels: topics.map(t => t.replace(/_/g,' ')),
+      datasets: [
+        { label: 'Learner', data: scores, backgroundColor: 'rgba(79,124,255,.75)', borderRadius: 4 },
+        { label: 'Cohort avg', data: cohort, backgroundColor: 'rgba(90,95,114,.4)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0, max: 100,
+          ticks: { callback: v => v + '%', font: { size: 11 }, color: '#5a5f72' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 35, color: '#5a5f72' },
+          grid: { display: false },
+        }
+      }
+    }
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function setBadge(id, text, cls) { const el = document.getElementById(id); if (!el) return; el.textContent = text; el.className = 'badge ' + cls; }
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ordinal(n) { const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function levelColor(l) { return l==='advanced'?'badge-purple':l==='intermediate'?'badge-blue':'badge-teal'; }
+function paceColor(p)  { return p==='fast'?'badge-green':p==='slow'?'badge-amber':'badge-blue'; }
+function challengeColor(c) { return c==='hard'?'badge-red':c==='easy'?'badge-green':'badge-amber'; }
+function diffColor(d)  { return d==='hard'?'badge-red':d==='easy'?'badge-green':'badge-amber'; }
+function setLoading(on) {
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btnText').textContent = on ? 'Running…' : 'Run agents ↗';
+  document.getElementById('runBtn').disabled = on;
+}
+function showError(msg) {
+  const el = document.getElementById('errorBar');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+function hideError() { document.getElementById('errorBar').style.display = 'none'; }
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadLearners();
+</script>
+</body>
+</html>
