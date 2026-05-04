@@ -3,58 +3,36 @@ from models import Assessment
 from services.claude_client import call_claude_json
 from services.memory_store import memory
 
-SYSTEM_PROMPT = """
-You are the Assessment Agent in an agentic curriculum system.
-Analyse a learner's assessment history and produce a detailed mastery map.
-Output a JSON object with these exact keys:
-{
-  "learner_id": int,
-  "mastery_map": {
-    "<topic_name>": {
-      "mastery_score": float between 0-100,
-      "mastery_level": "low" or "developing" or "proficient" or "advanced",
-      "needs_reassessment": boolean,
-      "misconceptions": [list of strings],
-      "improvement_trend": "improving" or "stable" or "declining"
-    }
-  },
-  "overall_mastery": float between 0-100,
-  "highest_mastery_topic": string,
-  "lowest_mastery_topic": string,
-  "priority_topics_for_practice": [list of topic strings],
-  "recommendations": string
-}
-"""
+SYSTEM_PROMPT = """You are an Assessment Agent. Analyse assessments and return JSON with keys:
+learner_id(int), mastery_map(dict of topic->mastery_score/mastery_level/needs_reassessment/misconceptions/improvement_trend),
+overall_mastery(float 0-100), highest_mastery_topic(string), lowest_mastery_topic(string),
+priority_topics_for_practice(list), recommendations(string)"""
 
 def run(db, learner_id):
-    assessments = db.query(Assessment).filter(Assessment.learner_id == learner_id).all()
+    # Cache check
+    cached = memory.read("assessment_agent", f"mastery_{learner_id}")
+    if cached:
+        print(f"  ✅ Assessment Agent: Using cached mastery for learner {learner_id}")
+        return cached
 
+    assessments = db.query(Assessment).filter(Assessment.learner_id == learner_id).all()
     if not assessments:
         return {"learner_id": learner_id, "mastery_map": {}, "overall_mastery": 0}
 
-    assessment_data = [
-        {
-            "topic": a.topic,
-            "score": a.score,
-            "difficulty": a.difficulty,
-            "hints_used": a.hints_used,
-            "attempts": a.attempts,
-            "time_taken": a.time_taken,
-            "misconceptions": a.misconceptions,
-        }
-        for a in assessments
-    ]
+    # Summarise assessments instead of sending raw data
+    topic_scores = {}
+    for a in assessments:
+        topic_scores.setdefault(a.topic, []).append(a.score)
+    summary = {topic: round(sum(s)/len(s), 1) for topic, s in topic_scores.items()}
 
     learner_profile = memory.read("learner_agent", f"profile_{learner_id}") or {}
-
     payload = {
         "learner_id": learner_id,
-        "learner_level": learner_profile.get("learning_pace", "unknown"),
-        "assessments": assessment_data,
+        "topic_avg_scores": summary,
+        "weak_topics": learner_profile.get("weak_topics", []),
     }
 
-    raw = call_claude_json(SYSTEM_PROMPT, f"Analyse this learner's assessments: {json.dumps(payload, indent=2)}")
-
+    raw = call_claude_json(SYSTEM_PROMPT, f"Build mastery map: {json.dumps(payload)}")
     try:
         mastery_map = json.loads(raw)
     except:
